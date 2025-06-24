@@ -4,7 +4,7 @@ BUILD = build
 
 .PHONY: all FloppyImage Bootloader Kernel ToolFat Clean Always 
 
-all: FloppyImage ToolFat
+all: FloppyImage 
 
 # FLOPPY IMAGE BUILD
 FloppyImage: $(BUILD)/main_floppy.img
