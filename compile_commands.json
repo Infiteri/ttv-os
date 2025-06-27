@@ -1,0 +1,5 @@
+{
+  "file": ".",
+  "command": "clang -std=c11 -ffreestanding -m32 -Dfar="
+}
+
