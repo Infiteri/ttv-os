@@ -1,3 +1,4 @@
+
 #include "fat.h"
 #include "disk.h"
 #include "memdefs.h"
@@ -10,6 +11,8 @@
 #define MAX_PATH_SIZE 256
 #define MAX_FILE_COUNT 10
 #define ROOT_DIRECTORY_HANDLE -1
+
+#define println(str, ...) printf("%s\r\n", str, ##__VA_ARGS__)
 
 #pragma pack(push, 1)
 
@@ -42,12 +45,12 @@ typedef struct
 
 typedef struct
 {
+    u8 Buffer[SECTOR_SIZE];
     FatFile File;
     bool Opened;
     u32 FirstCluster;
     u32 CurrentCluster;
     u32 CurrentSectorInCluster;
-    u8 Buffer[SECTOR_SIZE];
 } FatFileData;
 
 typedef struct
@@ -55,13 +58,11 @@ typedef struct
     union
     {
         FatBootSector Sector;
-
         u8 SectorBytes[SECTOR_SIZE];
     } BS;
 
     FatFileData RootDirectory;
     FatFileData OpenedFiles[MAX_FILE_COUNT];
-
 } FatData;
 
 static FatData far *Data;
@@ -78,36 +79,49 @@ uint32_t FatNextCluster(uint32_t currentCluster)
         return (*(uint16_t far *)(Fat + fatIndex)) >> 4;
 }
 
-bool ReadBootSector(Disk *disk) { return DiskReadSectors(disk, 0, 1, Data->BS.SectorBytes); }
+bool ReadBootSector(Disk *disk)
+{
+    if (!DiskReadSectors(disk, 0, 1, Data->BS.SectorBytes))
+    {
+        printf("FAT: Failed to read boot sector (LBA 0)\r\n");
+        return false;
+    }
+    return true;
+}
 
 bool ReadFat(Disk *disk)
 {
-    return DiskReadSectors(disk, Data->BS.Sector.ReservedSectors, Data->BS.Sector.SectorsPerFat,
-                           Fat);
+    u32 lba = Data->BS.Sector.ReservedSectors;
+    u32 count = Data->BS.Sector.SectorsPerFat;
+
+    if (!DiskReadSectors(disk, lba, count, Fat))
+    {
+        printf("FAT: Failed to read FAT (LBA %lu, count %u)\r\n", lba, count);
+        return false;
+    }
+
+    return true;
 }
 
 bool FatInitialize(Disk *disk)
 {
     Data = (FatData far *)MEMORY_FAT_ADDR;
+
     if (!ReadBootSector(disk))
-    {
-        printf("FAT: Unable to read boot sectors\r\b");
         return false;
-    }
 
     Fat = (u8 far *)Data + sizeof(FatData);
     u32 fatSize = Data->BS.Sector.BytesPerSector * Data->BS.Sector.SectorsPerFat;
+
     if (sizeof(FatData) + fatSize >= MEMORY_FAT_SIZE)
     {
-        printf("FAT: Not enough memory to read fat\n");
+        printf("FAT: Not enough memory to read FAT (required: %lu, available: %u)\r\n",
+               sizeof(FatData) + fatSize, MEMORY_FAT_SIZE);
         return false;
     }
 
     if (!ReadFat(disk))
-    {
-        printf("FAT: Unable to read fat\n");
         return false;
-    }
 
     u32 rootDirSize = sizeof(FatDirectoryEntry) * Data->BS.Sector.DirEntryCount;
     u32 rootDirLba =
@@ -117,28 +131,16 @@ bool FatInitialize(Disk *disk)
     Data->RootDirectory.File.Handle = ROOT_DIRECTORY_HANDLE;
     Data->RootDirectory.File.IsDirectory = true;
     Data->RootDirectory.File.Position = 0;
-    Data->RootDirectory.File.Size = sizeof(FatDirectoryEntry) * Data->BS.Sector.DirEntryCount;
+    Data->RootDirectory.File.Size = rootDirSize;
     Data->RootDirectory.FirstCluster = rootDirLba;
     Data->RootDirectory.CurrentCluster = rootDirLba;
     Data->RootDirectory.CurrentSectorInCluster = 0;
 
     if (!DiskReadSectors(disk, rootDirLba, 1, Data->RootDirectory.Buffer))
     {
-        printf("FAT: Unable to read root directory");
+        printf("FAT: Failed to read root directory (LBA %lu)\r\n", rootDirLba);
         return false;
     }
-
-    //   if (sizeof(FatData) + fatSize + rootDirSize >= MEMORY_FatSIZE)
-    // {
-    //     printf("FAT: Not enough memory to read root directory\n");
-    //     return false;
-    // }
-    //
-    // if (!ReadRootDirectory(disk))
-    // {
-    //     printf("FAT: Cannot read root directory\n");
-    //     return false;
-    // }
 
     u32 rootDirSectors =
         (rootDirSize + Data->BS.Sector.BytesPerSector - 1) / Data->BS.Sector.BytesPerSector;
@@ -158,16 +160,15 @@ uint32_t ClusterToLba(uint32_t cluster)
 FatFile far *FatOpenEntry(Disk *disk, FatDirectoryEntry *entry)
 {
     int handle = -1;
-
     for (int i = 0; i < MAX_FILE_COUNT && handle < 0; i++)
     {
-        if (Data->OpenedFiles[i].Opened)
+        if (!Data->OpenedFiles[i].Opened)
             handle = i;
     }
 
     if (handle < 0)
     {
-        printf("FAT: Unable to open file handle");
+        printf("FAT: No available file handles to open entry\r\n");
         return NULL;
     }
 
@@ -175,14 +176,14 @@ FatFile far *FatOpenEntry(Disk *disk, FatDirectoryEntry *entry)
     fd->File.Handle = handle;
     fd->File.IsDirectory = (entry->Attributes & FAT_ATTRIBUTE_DIRECTORY) != 0;
     fd->File.Position = 0;
-    fd->File.Size = 0;
+    fd->File.Size = entry->Size;
     fd->FirstCluster = entry->FirstClusterLow + ((u32)entry->FirstClusterHigh << 16);
     fd->CurrentCluster = fd->FirstCluster;
     fd->CurrentSectorInCluster = 0;
 
     if (!DiskReadSectors(disk, ClusterToLba(fd->CurrentCluster), 1, fd->Buffer))
     {
-        printf("FAT: Unable to read sectors");
+        printf("FAT: Failed to read first sector of file (cluster %lu)\r\n", fd->CurrentCluster);
         return NULL;
     }
 
@@ -195,7 +196,6 @@ bool FatFindFile(Disk *disk, FatFile far *file, const char *name, FatDirectoryEn
     char fatName[12];
     FatDirectoryEntry entry;
 
-    // convert from name to fat name
     MemSet(fatName, ' ', sizeof(fatName));
     fatName[11] = '\0';
 
@@ -230,7 +230,6 @@ FatFile far *FatOpen(Disk *disk, const char *path)
         path++;
 
     char name[MAX_PATH_SIZE];
-
     FatFile far *current = &Data->RootDirectory.File;
 
     while (*path)
@@ -241,14 +240,14 @@ FatFile far *FatOpen(Disk *disk, const char *path)
         if (delim != NULL)
         {
             MemCpy(name, path, delim - path);
-            name[delim - path + 1] = '\0';
+            name[delim - path] = '\0';
             path = delim + 1;
         }
         else
         {
             unsigned len = StrLen(path);
             MemCpy(name, path, len);
-            name[len + 1] = '\0';
+            name[len] = '\0';
             path += len;
             isLast = true;
         }
@@ -260,16 +259,21 @@ FatFile far *FatOpen(Disk *disk, const char *path)
 
             if (!isLast && (entry.Attributes & FAT_ATTRIBUTE_DIRECTORY) == 0)
             {
-                printf("FAT: Cannot open a directory '%s'\n", name);
+                printf("FAT: '%s' is not a directory\r\n", name);
                 return NULL;
             }
 
             current = FatOpenEntry(disk, &entry);
+            if (!current)
+            {
+                printf("FAT: Failed to open entry '%s'\r\n", name);
+                return NULL;
+            }
         }
         else
         {
+            printf("FAT: Entry '%s' not found\r\n", name);
             FatClose(current);
-            printf("FAT: Unable to open entry\n");
             return NULL;
         }
     }
@@ -305,10 +309,9 @@ u32 FatRead(Disk *disk, FatFile far *file, uint32_t byteCount, void *dataOut)
             if (fd->File.Handle == ROOT_DIRECTORY_HANDLE)
             {
                 ++fd->CurrentCluster;
-
                 if (!DiskReadSectors(disk, fd->CurrentCluster, 1, fd->Buffer))
                 {
-                    printf("FAT: read error (root directory)\r\n");
+                    printf("FAT: Read error (root directory)\r\n");
                     break;
                 }
             }
@@ -320,7 +323,7 @@ u32 FatRead(Disk *disk, FatFile far *file, uint32_t byteCount, void *dataOut)
                     fd->CurrentCluster = FatNextCluster(fd->CurrentCluster);
                 }
 
-                if (fd->CurrentCluster >= 0xFF8) // end of file marker for FAT12
+                if (fd->CurrentCluster >= 0xFF8)
                 {
                     fd->File.Size = fd->File.Position;
                     break;
@@ -330,7 +333,7 @@ u32 FatRead(Disk *disk, FatFile far *file, uint32_t byteCount, void *dataOut)
                                      ClusterToLba(fd->CurrentCluster) + fd->CurrentSectorInCluster,
                                      1, fd->Buffer))
                 {
-                    printf("FAT: read error (file data)\n");
+                    printf("FAT: Read error (file data)\r\n");
                     break;
                 }
             }

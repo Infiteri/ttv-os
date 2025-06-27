@@ -1,7 +1,7 @@
 Open Watcom Linker Version 2.0 beta Jun 23 2025 02:57:36 (64-bit)
 Copyright (c) 2002-2025 The Open Watcom Contributors. All Rights Reserved.
 Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
-Created on:       25/06/27 16:55:17
+Created on:       25/06/27 17:34:48
 Executable Image: D:/Ion/Code/OS/build/stage2.bin
 creating a RAW Binary Image executable
 
@@ -13,7 +13,7 @@ creating a RAW Binary Image executable
 Group                           Address              Size
 =====                           =======              ====
 
-DGROUP                          0000184a             00000174
+DGROUP                          00001a62             0000022c
 
 
 
@@ -25,11 +25,11 @@ Segment                Class          Group          Address         Size
 =======                =====          =====          =======         ====
 
 _ENTRY                 CODE           AUTO           00000000        00000012
-_TEXT                  CODE           AUTO           00000012        00001838
-CONST                  DATA           DGROUP         0000184a        00000156
-CONST2                 DATA           DGROUP         000019a0        00000011
-_DATA                  DATA           DGROUP         000019b2        00000004
-_BSS                   BSS            DGROUP         000019b6        00000008
+_TEXT                  CODE           AUTO           00000012        00001a50
+CONST                  DATA           DGROUP         00001a62        0000020e
+CONST2                 DATA           DGROUP         00001c70        00000011
+_DATA                  DATA           DGROUP         00001c82        00000004
+_BSS                   BSS            DGROUP         00001c86        00000008
 
 
                         +----------------+
@@ -54,41 +54,41 @@ Module: D:/Ion/Code/OS/build/stage2/asm/x86.obj(x86.asm)
 000000df       _x86_Disk_GetDriveParams
 Module: D:/Ion/Code/OS/build/stage2/c/disk.obj(D:\Ion\Code\OS\src\bootloader\stage2\disk.c)
 00000123       DiskInitialize_
-00000197+      LbaToChs_
-0000024a       DiskReadSectors_
+00000199+      LbaToChs_
+0000024c       DiskReadSectors_
 Module: D:/Ion/Code/OS/build/stage2/c/fat.obj(D:\Ion\Code\OS\src\bootloader\stage2\fat.c)
-000002e7+      FatNextCluster_
-00000370+      ReadBootSector_
-000003a4+      ReadFat_
-000003e8       FatInitialize_
-00000623+      ClusterToLba_
-00000679+      FatOpenEntry_
-00000827+      FatFindFile_
-00000961+      FatOpen_
-00000adc+      FatRead_
-00000e2c+      FatReadEntry_
-00000e85+      FatClose_
+000002e9+      FatNextCluster_
+00000372+      ReadBootSector_
+000003c1+      ReadFat_
+00000444       FatInitialize_
+00000680+      ClusterToLba_
+000006d6+      FatOpenEntry_
+000008b0+      FatFindFile_
+000009ea       FatOpen_
+00000b9d       FatRead_
+00000f06       FatReadEntry_
+00000f5f       FatClose_
 Module: D:/Ion/Code/OS/build/stage2/c/main.obj(D:\Ion\Code\OS\src\bootloader\stage2\main.c)
-00000efc       _cstart_
+00000fd6       _cstart_
 Module: D:/Ion/Code/OS/build/stage2/c/memory.obj(D:\Ion\Code\OS\src\bootloader\stage2\memory.c)
-00000f3d       MemCpy_
-00000fb1       MemSet_
-00001010       MemCmp_
+00001155       MemCpy_
+000011c9       MemSet_
+00001228       MemCmp_
 Module: D:/Ion/Code/OS/build/stage2/c/stdio.obj(D:\Ion\Code\OS\src\bootloader\stage2\stdio.c)
-00001089+      putc_
-000010b0+      puts_
-000010e7+      puts_f_
-00001124       _printf
-000013a7+      printf_number_
-000019a0+      _g_HexChars
+000012a1       putc_
+000012c8+      puts_
+000012ff+      puts_f_
+0000133c       _printf
+000015bf+      printf_number_
+00001c70+      _g_HexChars
 Module: D:/Ion/Code/OS/build/stage2/c/string.obj(D:\Ion\Code\OS\src\bootloader\stage2\string.c)
-0000161b       StrChr_
-00001676+      StrCpy_
-000016f0       StrLen_
-0000172b+      IsLower_
-00001769       ToUpper_
+00001833       StrChr_
+0000188e+      StrCpy_
+00001908       StrLen_
+00001943+      IsLower_
+00001981       ToUpper_
 Module: D:/Ion/Code/OS/build/stage2/c/utility.obj(D:\Ion\Code\OS\src\bootloader\stage2\utility.c)
-000017b1+      Align_
+000019c9+      Align_
 
 
                         +---------------------+
@@ -104,41 +104,41 @@ Module          Segment               Class           Address         Size
 main.asm        _ENTRY                CODE           00000000         00000012
 x86.asm         _TEXT                 CODE           00000012         00000111
 D:\Ion\Code\OS\src\bootloader\stage2\disk.c
-                _TEXT                 CODE           00000123         000001c4
-                CONST                 DATA           0000184a         00000000
-                CONST2                DATA           000019a0         00000000
-                _DATA                 DATA           000019b2         00000000
+                _TEXT                 CODE           00000123         000001c6
+                CONST                 DATA           00001a62         00000000
+                CONST2                DATA           00001c70         00000000
+                _DATA                 DATA           00001c82         00000000
 D:\Ion\Code\OS\src\bootloader\stage2\fat.c
-                _TEXT                 CODE           000002e7         00000c15
-                CONST                 DATA           0000184a         0000013d
-                CONST2                DATA           000019a0         00000000
-                _DATA                 DATA           000019b2         00000004
-                _BSS                  BSS            000019b6         00000008
+                _TEXT                 CODE           000002e9         00000ced
+                CONST                 DATA           00001a62         000001d0
+                CONST2                DATA           00001c70         00000000
+                _DATA                 DATA           00001c82         00000004
+                _BSS                  BSS            00001c86         00000008
 D:\Ion\Code\OS\src\bootloader\stage2\main.c
-                _TEXT                 CODE           00000efc         00000041
-                CONST                 DATA           00001988         00000018
-                CONST2                DATA           000019a0         00000000
-                _DATA                 DATA           000019b6         00000000
+                _TEXT                 CODE           00000fd6         0000017f
+                CONST                 DATA           00001c32         0000003e
+                CONST2                DATA           00001c70         00000000
+                _DATA                 DATA           00001c86         00000000
 D:\Ion\Code\OS\src\bootloader\stage2\memory.c
-                _TEXT                 CODE           00000f3d         0000014c
-                CONST                 DATA           000019a0         00000000
-                CONST2                DATA           000019a0         00000000
-                _DATA                 DATA           000019b6         00000000
+                _TEXT                 CODE           00001155         0000014c
+                CONST                 DATA           00001c70         00000000
+                CONST2                DATA           00001c70         00000000
+                _DATA                 DATA           00001c86         00000000
 D:\Ion\Code\OS\src\bootloader\stage2\stdio.c
-                _TEXT                 CODE           00001089         00000592
-                CONST                 DATA           000019a0         00000000
-                CONST2                DATA           000019a0         00000011
-                _DATA                 DATA           000019b6         00000000
+                _TEXT                 CODE           000012a1         00000592
+                CONST                 DATA           00001c70         00000000
+                CONST2                DATA           00001c70         00000011
+                _DATA                 DATA           00001c86         00000000
 D:\Ion\Code\OS\src\bootloader\stage2\string.c
-                _TEXT                 CODE           0000161b         00000196
-                CONST                 DATA           000019a0         00000000
-                CONST2                DATA           000019b2         00000000
-                _DATA                 DATA           000019b6         00000000
+                _TEXT                 CODE           00001833         00000196
+                CONST                 DATA           00001c70         00000000
+                CONST2                DATA           00001c82         00000000
+                _DATA                 DATA           00001c86         00000000
 D:\Ion\Code\OS\src\bootloader\stage2\utility.c
-                _TEXT                 CODE           000017b1         00000099
-                CONST                 DATA           000019a0         00000000
-                CONST2                DATA           000019b2         00000000
-                _DATA                 DATA           000019b6         00000000
+                _TEXT                 CODE           000019c9         00000099
+                CONST                 DATA           00001c70         00000000
+                CONST2                DATA           00001c82         00000000
+                _DATA                 DATA           00001c86         00000000
 Warning! W1014: stack segment not found
 
 
@@ -147,6 +147,6 @@ Warning! W1014: stack segment not found
                         +-----------------------+
 
 Stack size:  0200 (512.)
-Memory size:  19be (6590.)
+Memory size:  1c8e (7310.)
 Entry point address: 00000000
-Link time: 00:00.12
+Link time: 00:00.07

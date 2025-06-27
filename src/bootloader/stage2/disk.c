@@ -6,13 +6,12 @@ bool DiskInitialize(Disk *disk, uint8_t driveNumber)
     uint8_t driveType;
     uint16_t cylinders, heads, sectors;
 
-    disk->id = driveNumber;
-
-    if (!x86_Disk_GetDriveParams(disk->id, &driveType, &cylinders, &heads, &sectors))
+    if (!x86_Disk_GetDriveParams(disk->id, &driveType, &cylinders, &sectors, &heads))
         return false;
 
-    disk->cylinders = cylinders;
-    disk->heads = heads;
+    disk->id = driveNumber;
+    disk->cylinders = cylinders + 1;
+    disk->heads = heads + 1;
     disk->sectors = sectors;
 
     return true;
